@@ -1,4 +1,4 @@
-use super::{LimiterInstance, LimiterType, RateLimiterError, SerializableInstance};
+use super::{LimiterInstance, LimiterType, RateLimiterError};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -18,7 +18,7 @@ impl FixedWindow {
 }
 
 impl LimiterType for FixedWindow {
-    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<Vec<u8>, RateLimiterError> {
+    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<LimiterInstance, RateLimiterError> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -39,13 +39,7 @@ impl LimiterType for FixedWindow {
             return Err(RateLimiterError::RateExceeded);
         }
         instance.count += 1;
-        instance.to_bytes()
-    }
-
-    fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError> {
-        Ok(LimiterInstance::FixedWindowInstance(
-            FixedWindowInstance::from_bytes(value)?,
-        ))
+        Ok(LimiterInstance::FixedWindowInstance(instance))
     }
 }
 
@@ -70,5 +64,3 @@ impl FixedWindowInstance {
         self.count
     }
 }
-
-impl SerializableInstance for FixedWindowInstance {}

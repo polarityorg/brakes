@@ -34,4 +34,11 @@ impl Backend for MemCache {
                 .map_err(|e| BackendError::MemCacheError(e)),
         }
     }
+
+    fn delete(&self, key: &str) -> Result<(), BackendError> {
+        match self.client.delete(&key) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(BackendError::MemCacheError(e)),
+        }
+    }
 }

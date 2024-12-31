@@ -1,4 +1,4 @@
-use super::{LimiterInstance, LimiterType, RateLimiterError, SerializableInstance};
+use super::{LimiterInstance, LimiterType, RateLimiterError};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -18,7 +18,7 @@ impl TokenBucket {
 }
 
 impl LimiterType for TokenBucket {
-    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<Vec<u8>, RateLimiterError> {
+    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<LimiterInstance, RateLimiterError> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -43,13 +43,7 @@ impl LimiterType for TokenBucket {
         }
         instance.tokens -= 1f32;
         instance.last_access = now;
-        instance.to_bytes()
-    }
-
-    fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError> {
-        Ok(LimiterInstance::TokenBucketInstance(
-            TokenBucketInstance::from_bytes(value)?,
-        ))
+        Ok(LimiterInstance::TokenBucketInstance(instance))
     }
 }
 
@@ -74,5 +68,3 @@ impl TokenBucketInstance {
         self.last_access
     }
 }
-
-impl SerializableInstance for TokenBucketInstance {}

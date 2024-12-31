@@ -19,6 +19,7 @@ use std::{
 pub trait Backend: Clone {
     fn get(&self, key: &str) -> Result<(Vec<u8>, Option<u64>), BackendError>;
     fn set(&self, key: &str, value: &Vec<u8>, version: Option<u64>) -> Result<(), BackendError>;
+    fn delete(&self, key: &str) -> Result<(), BackendError>;
 
     fn get_with_retries(
         &self,
@@ -51,6 +52,20 @@ pub trait Backend: Clone {
             match self.set(key, &value, version) {
                 Ok(_) => return Ok(()),
                 Err(BackendError::ValueChanged) => return Err(BackendError::ValueChanged),
+                Err(e) => {
+                    err = Some(e);
+                    continue;
+                }
+            }
+        }
+        Err(err.unwrap())
+    }
+
+    fn delete_with_retries(&self, key: &str, tries: u32) -> Result<(), BackendError> {
+        let mut err = None;
+        for _ in 0..tries {
+            match self.delete(key) {
+                Ok(_) => return Ok(()),
                 Err(e) => {
                     err = Some(e);
                     continue;

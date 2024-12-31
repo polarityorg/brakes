@@ -35,4 +35,14 @@ impl Backend for Memory {
             Err(_) => Err(BackendError::LocalMemLockError),
         }
     }
+
+    fn delete(&self, key: &str) -> Result<(), BackendError> {
+        match self.map.lock() {
+            Ok(mut m) => {
+                m.remove(key);
+                Ok(())
+            }
+            Err(_) => Err(BackendError::LocalMemLockError),
+        }
+    }
 }

@@ -51,4 +51,14 @@ impl Backend for RedisBackend {
             Err(e) => Err(BackendError::R2D2Error(e)),
         }
     }
+
+    fn delete(&self, key: &str) -> Result<(), BackendError> {
+        match self.pool.get() {
+            Ok(mut conn) => match conn.del::<&str, ()>(key) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(BackendError::RedisError(e)),
+            },
+            Err(e) => Err(BackendError::R2D2Error(e)),
+        }
+    }
 }

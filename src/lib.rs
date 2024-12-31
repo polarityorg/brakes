@@ -356,6 +356,19 @@
 //!     .build();
 //! ```
 //!
+//! ## Discard Invalid Cache
+//!
+//! In some cases, the data stored in the configured rate limiter `Backend` might be invalid. This might happen:
+//! - When the `RateLimiter` type changes (you switch from `SlidingWindowCounter` to `LeakyBucket` limiter, for example). Stored entries in the `Backend` now represent the wrong `LimiterInstance` type and are no longer valid. Calls to `is_ratelimited(key)` return `Err(RateLimiterError::WrongLimiterInstanceType)`
+//! - When the cached data in the configured `Backend` gets overwritten by an external process. Calls to `is_ratelimited(key)` return `Err(RateLimiterError::MalformedValue(..))`
+//!
+//! In either case, fetching the cached `LimiterInstance` results in a deserialization error.
+//!
+//! If this happens, by default, the `RateLimiter` discards invalid data by deleting the provided key and allowing the request. Subsequent requests will create a new value in the cache.
+//!
+//! The behavior can be changed by calling `with_discard_invalid_cache_entries(false)`.
+//! **Note:** this might cause all requests to be rate-limited (for example, if the `RateLimiter` type was changed)
+//!
 pub mod backend;
 pub mod middleware;
 pub mod types;
@@ -364,7 +377,7 @@ use crate::{
     backend::{Backend, BackendError},
     types::LimiterType,
 };
-use types::{LimiterInstance, RateLimiterError};
+use types::{LimiterInstance, RateLimiterError, SerializableInstance};
 
 #[derive(Debug, Clone)]
 pub struct RateLimiter<T, B> {
@@ -372,6 +385,7 @@ pub struct RateLimiter<T, B> {
     backend: B,
     on_failure: RetryStrategy,
     on_conflict: RetryStrategy,
+    discard_invalid_cache: bool,
     hasher: Option<fn(&str) -> String>,
 }
 
@@ -382,6 +396,7 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
             limiter: None,
             on_failure: None,
             on_conflict: None,
+            discard_invalid_cache: true,
             hasher: None,
         }
     }
@@ -418,21 +433,51 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
             };
             let updated_limiter = self.limiter.is_ratelimited(value);
             match updated_limiter {
-                Ok(v) => match self
-                    .backend
-                    .set_with_retries(&key, v, version, failure_tries)
-                {
-                    Ok(()) => return Ok(()),
-                    Err(BackendError::ValueChanged) => {
-                        continue;
-                    }
-                    Err(e) => {
-                        if allow_on_failure {
-                            return Ok(());
+                Ok(v) => {
+                    match self
+                        .backend
+                        .set_with_retries(&key, v.to_bytes()?, version, failure_tries)
+                    {
+                        Ok(()) => return Ok(()),
+                        Err(BackendError::ValueChanged) => {
+                            continue;
                         }
-                        return Err(RateLimiterError::BackendError(e));
+                        Err(e) => {
+                            if allow_on_failure {
+                                return Ok(());
+                            }
+                            return Err(RateLimiterError::BackendError(e));
+                        }
                     }
-                },
+                }
+                Err(RateLimiterError::MalformedValue(e)) => {
+                    if self.discard_invalid_cache {
+                        match self.backend.delete_with_retries(&key, failure_tries) {
+                            Ok(_) => return Ok(()),
+                            Err(e) => {
+                                if allow_on_failure {
+                                    return Ok(());
+                                }
+                                return Err(RateLimiterError::BackendError(e));
+                            }
+                        }
+                    }
+                    return Err(RateLimiterError::MalformedValue(e));
+                }
+                Err(RateLimiterError::WrongLimiterInstanceType) => {
+                    if self.discard_invalid_cache {
+                        match self.backend.delete_with_retries(&key, failure_tries) {
+                            Ok(_) => return Ok(()),
+                            Err(e) => {
+                                if allow_on_failure {
+                                    return Ok(());
+                                }
+                                return Err(RateLimiterError::BackendError(e));
+                            }
+                        }
+                    }
+                    return Err(RateLimiterError::WrongLimiterInstanceType);
+                }
                 Err(e) => return Err(e),
             }
         }
@@ -456,6 +501,7 @@ pub struct RateLimiterBuilder<C, B> {
     limiter: Option<C>,
     on_failure: Option<RetryStrategy>,
     on_conflict: Option<RetryStrategy>,
+    discard_invalid_cache: bool,
     hasher: Option<fn(&str) -> String>,
 }
 
@@ -489,6 +535,11 @@ where
         self
     }
 
+    pub fn with_discard_invalid_cache_entries(mut self, v: bool) -> Self {
+        self.discard_invalid_cache = v;
+        self
+    }
+
     pub fn build(mut self) -> RateLimiter<C, B> {
         if self.backend.is_none() {
             panic!("no backend specified");
@@ -510,6 +561,7 @@ where
             limiter: self.limiter.unwrap(),
             on_failure: self.on_failure.unwrap(),
             on_conflict: self.on_conflict.unwrap(),
+            discard_invalid_cache: self.discard_invalid_cache,
             hasher: self.hasher,
         }
     }

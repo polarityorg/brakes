@@ -15,11 +15,13 @@ use std::{
 use token_bucket::TokenBucketInstance;
 
 pub trait LimiterType: Clone {
-    fn is_ratelimited(&self, value: Option<Vec<u8>>) -> Result<Vec<u8>, RateLimiterError>;
-    fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError>;
+    fn is_ratelimited(&self, value: Option<Vec<u8>>) -> Result<LimiterInstance, RateLimiterError>;
+    fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError> {
+        Ok(LimiterInstance::from_bytes(value)?)
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum LimiterInstance {
     FixedWindowInstance(FixedWindowInstance),
     SlidingWindowInstance(SlidingWindowInstance),
@@ -31,44 +33,49 @@ impl LimiterInstance {
     pub fn as_fixed_window_instance(self) -> Result<FixedWindowInstance, RateLimiterError> {
         match self {
             Self::FixedWindowInstance(i) => Ok(i),
-            _ => Err(RateLimiterError::MalformedValue(None)),
+            _ => Err(RateLimiterError::WrongLimiterInstanceType),
         }
     }
 
     pub fn as_sliding_window_instance(self) -> Result<SlidingWindowInstance, RateLimiterError> {
         match self {
             Self::SlidingWindowInstance(i) => Ok(i),
-            _ => Err(RateLimiterError::MalformedValue(None)),
+            _ => Err(RateLimiterError::WrongLimiterInstanceType),
         }
     }
 
     pub fn as_token_bucket_instance(self) -> Result<TokenBucketInstance, RateLimiterError> {
         match self {
             Self::TokenBucketInstance(i) => Ok(i),
-            _ => Err(RateLimiterError::MalformedValue(None)),
+            _ => Err(RateLimiterError::WrongLimiterInstanceType),
         }
     }
 
     pub fn as_leaky_bucket_instance(self) -> Result<LeakyBucketInstance, RateLimiterError> {
         match self {
             Self::LeakyBucketInstance(i) => Ok(i),
-            _ => Err(RateLimiterError::MalformedValue(None)),
+            _ => Err(RateLimiterError::WrongLimiterInstanceType),
         }
     }
 }
 
-trait SerializableInstance: Debug + Serialize + for<'de> Deserialize<'de> {
+impl SerializableInstance for LimiterInstance {}
+
+pub(crate) trait SerializableInstance:
+    Debug + Serialize + for<'de> Deserialize<'de>
+{
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, RateLimiterError> {
-        bincode::deserialize(&bytes).map_err(|e| RateLimiterError::MalformedValue(Some(e)))
+        bincode::deserialize(&bytes).map_err(|e| RateLimiterError::MalformedValue(e))
     }
     fn to_bytes(self) -> Result<Vec<u8>, RateLimiterError> {
-        bincode::serialize(&self).map_err(|e| RateLimiterError::MalformedValue(Some(e)))
+        bincode::serialize(&self).map_err(|e| RateLimiterError::MalformedValue(e))
     }
 }
 
 #[derive(Debug)]
 pub enum RateLimiterError {
-    MalformedValue(Option<bincode::Error>),
+    MalformedValue(bincode::Error),
+    WrongLimiterInstanceType,
     RateExceeded,
     BackendError(BackendError),
     BackendConflict,
@@ -77,8 +84,10 @@ pub enum RateLimiterError {
 impl Display for RateLimiterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RateLimiterError::MalformedValue(Some(e)) => std::fmt::Display::fmt(&e, f),
-            RateLimiterError::MalformedValue(None) => write!(f, "malformed value"),
+            RateLimiterError::MalformedValue(e) => std::fmt::Display::fmt(&e, f),
+            RateLimiterError::WrongLimiterInstanceType => {
+                write!(f, "wrong instance type provided")
+            }
             RateLimiterError::RateExceeded => write!(f, "rate exceeded"),
             RateLimiterError::BackendError(e) => std::fmt::Display::fmt(&e, f),
             RateLimiterError::BackendConflict => write!(f, "backend value conflict"),

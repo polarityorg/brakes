@@ -1,7 +1,4 @@
-use super::{
-    fixed_window::FixedWindowInstance, LimiterInstance, LimiterType, RateLimiterError,
-    SerializableInstance,
-};
+use super::{fixed_window::FixedWindowInstance, LimiterInstance, LimiterType, RateLimiterError};
 use serde::{Deserialize, Serialize};
 use std::{
     cmp,
@@ -24,7 +21,7 @@ impl SlidingWindowCounter {
 }
 
 impl LimiterType for SlidingWindowCounter {
-    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<Vec<u8>, RateLimiterError> {
+    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<LimiterInstance, RateLimiterError> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -53,13 +50,7 @@ impl LimiterType for SlidingWindowCounter {
         }
 
         instance.current.count += 1;
-        instance.to_bytes()
-    }
-
-    fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError> {
-        Ok(LimiterInstance::SlidingWindowInstance(
-            SlidingWindowInstance::from_bytes(value)?,
-        ))
+        Ok(LimiterInstance::SlidingWindowInstance(instance))
     }
 }
 
@@ -78,5 +69,3 @@ impl SlidingWindowInstance {
         &self.previous
     }
 }
-
-impl SerializableInstance for SlidingWindowInstance {}

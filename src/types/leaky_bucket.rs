@@ -1,4 +1,4 @@
-use super::{LimiterInstance, LimiterType, RateLimiterError, SerializableInstance};
+use super::{LimiterInstance, LimiterType, RateLimiterError};
 use serde::{Deserialize, Serialize};
 use std::{
     cmp,
@@ -21,7 +21,7 @@ impl LeakyBucket {
 }
 
 impl LimiterType for LeakyBucket {
-    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<Vec<u8>, RateLimiterError> {
+    fn is_ratelimited(&self, bytes: Option<Vec<u8>>) -> Result<LimiterInstance, RateLimiterError> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -46,13 +46,7 @@ impl LimiterType for LeakyBucket {
             return Err(RateLimiterError::RateExceeded);
         }
         instance.processed += 1;
-        instance.to_bytes()
-    }
-
-    fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError> {
-        Ok(LimiterInstance::LeakyBucketInstance(
-            LeakyBucketInstance::from_bytes(value)?,
-        ))
+        Ok(LimiterInstance::LeakyBucketInstance(instance))
     }
 }
 
@@ -77,5 +71,3 @@ impl LeakyBucketInstance {
         self.last_leaked
     }
 }
-
-impl SerializableInstance for LeakyBucketInstance {}
