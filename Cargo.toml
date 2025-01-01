@@ -1,6 +1,6 @@
 [package]
 name = "brakes"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Mohammad Samir <mo.samir.yos@gmail.com>"]
 description = "A distributed rate limiting library"
