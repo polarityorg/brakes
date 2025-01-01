@@ -29,7 +29,7 @@ impl Backend for RedisBackend {
         }
     }
 
-    fn set(&self, key: &str, value: &Vec<u8>, _: Option<u64>) -> Result<(), BackendError> {
+    fn set(&self, key: &str, value: &[u8], _: Option<u64>) -> Result<(), BackendError> {
         match self.pool.get() {
             Ok(mut conn) => {
                 let mut pipe = pipe();

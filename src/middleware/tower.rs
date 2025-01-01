@@ -47,9 +47,9 @@ where
             .is_err()
         {
             let response = (self.callback)(request);
-            return Either::Left(ready(Ok(response)));
+            Either::Left(ready(Ok(response)))
         } else {
-            return Either::Right(self.inner.call(request));
+            Either::Right(self.inner.call(request))
         }
     }
 }

@@ -92,8 +92,6 @@ where
             let service_response = req.into_response(response.map_into_boxed_body());
             return Box::pin(async { Ok(service_response.map_body(|_, body| B::from(body))) });
         }
-
-        let res = self.service.call(req);
-        Box::pin(async move { Ok(res.await?) })
+        Box::pin(self.service.call(req))
     }
 }

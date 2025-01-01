@@ -33,7 +33,7 @@ impl LimiterType for TokenBucket {
 
         let elapsed = now - instance.last_access();
 
-        instance.tokens = instance.tokens + elapsed as f32 / self.fill_frequency.as_millis() as f32;
+        instance.tokens += elapsed as f32 / self.fill_frequency.as_millis() as f32;
         if instance.tokens > self.capacity as f32 {
             instance.tokens = self.capacity as f32;
         }

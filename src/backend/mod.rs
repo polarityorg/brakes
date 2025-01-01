@@ -18,7 +18,7 @@ use std::{
 
 pub trait Backend: Clone {
     fn get(&self, key: &str) -> Result<(Vec<u8>, Option<u64>), BackendError>;
-    fn set(&self, key: &str, value: &Vec<u8>, version: Option<u64>) -> Result<(), BackendError>;
+    fn set(&self, key: &str, value: &[u8], version: Option<u64>) -> Result<(), BackendError>;
     fn delete(&self, key: &str) -> Result<(), BackendError>;
 
     fn get_with_retries(

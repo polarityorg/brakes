@@ -421,7 +421,7 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
         };
 
         for _ in 0..conflict_tries {
-            let (value, version) = match self.backend.get_with_retries(&key, failure_tries) {
+            let (value, version) = match self.backend.get_with_retries(key, failure_tries) {
                 Ok((value, version)) => (Some(value), version),
                 Err(BackendError::KeyMissing) => (None, None),
                 Err(e) => {
@@ -436,7 +436,7 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
                 Ok(v) => {
                     match self
                         .backend
-                        .set_with_retries(&key, v.to_bytes()?, version, failure_tries)
+                        .set_with_retries(key, v.to_bytes()?, version, failure_tries)
                     {
                         Ok(()) => return Ok(()),
                         Err(BackendError::ValueChanged) => {
@@ -452,7 +452,7 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
                 }
                 Err(RateLimiterError::MalformedValue(e)) => {
                     if self.discard_invalid_cache {
-                        match self.backend.delete_with_retries(&key, failure_tries) {
+                        match self.backend.delete_with_retries(key, failure_tries) {
                             Ok(_) => return Ok(()),
                             Err(e) => {
                                 if allow_on_failure {
@@ -466,7 +466,7 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
                 }
                 Err(RateLimiterError::WrongLimiterInstanceType) => {
                     if self.discard_invalid_cache {
-                        match self.backend.delete_with_retries(&key, failure_tries) {
+                        match self.backend.delete_with_retries(key, failure_tries) {
                             Ok(_) => return Ok(()),
                             Err(e) => {
                                 if allow_on_failure {
@@ -488,7 +488,7 @@ impl<T: LimiterType, B: Backend> RateLimiter<T, B> {
     }
 
     pub fn get_usage(&self, key: &str) -> Result<LimiterInstance, RateLimiterError> {
-        let value = match self.backend.get(&key) {
+        let value = match self.backend.get(key) {
             Ok((v, _)) => v,
             Err(e) => return Err(RateLimiterError::BackendError(e)),
         };

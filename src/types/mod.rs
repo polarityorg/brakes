@@ -17,7 +17,7 @@ use token_bucket::TokenBucketInstance;
 pub trait LimiterType: Clone {
     fn is_ratelimited(&self, value: Option<Vec<u8>>) -> Result<LimiterInstance, RateLimiterError>;
     fn window_instance(&self, value: Vec<u8>) -> Result<LimiterInstance, RateLimiterError> {
-        Ok(LimiterInstance::from_bytes(value)?)
+        LimiterInstance::from_bytes(value)
     }
 }
 
@@ -65,10 +65,10 @@ pub(crate) trait SerializableInstance:
     Debug + Serialize + for<'de> Deserialize<'de>
 {
     fn from_bytes(bytes: Vec<u8>) -> Result<Self, RateLimiterError> {
-        bincode::deserialize(&bytes).map_err(|e| RateLimiterError::MalformedValue(e))
+        bincode::deserialize(&bytes).map_err(RateLimiterError::MalformedValue)
     }
     fn to_bytes(self) -> Result<Vec<u8>, RateLimiterError> {
-        bincode::serialize(&self).map_err(|e| RateLimiterError::MalformedValue(e))
+        bincode::serialize(&self).map_err(RateLimiterError::MalformedValue)
     }
 }
 

@@ -13,7 +13,7 @@ impl MemCache {
 
 impl Backend for MemCache {
     fn get(&self, key: &str) -> Result<(Vec<u8>, Option<u64>), BackendError> {
-        let (v, _, cas) = match self.client.get(&key) {
+        let (v, _, cas) = match self.client.get(key) {
             Ok(Some(v)) => v,
             Ok(None) => return Err(BackendError::KeyMissing),
             Err(e) => return Err(BackendError::MemCacheError(e)),
@@ -21,22 +21,22 @@ impl Backend for MemCache {
         Ok((v, cas))
     }
 
-    fn set(&self, key: &str, value: &Vec<u8>, cas: Option<u64>) -> Result<(), BackendError> {
+    fn set(&self, key: &str, value: &[u8], cas: Option<u64>) -> Result<(), BackendError> {
         match cas {
-            Some(cas) => match self.client.cas(&key, &value[..], u32::MAX, cas) {
-                Ok(false) => return Err(BackendError::ValueChanged),
-                Err(e) => return Err(BackendError::MemCacheError(e)),
+            Some(cas) => match self.client.cas(key, value, u32::MAX, cas) {
+                Ok(false) => Err(BackendError::ValueChanged),
+                Err(e) => Err(BackendError::MemCacheError(e)),
                 Ok(true) => Ok(()),
             },
             None => self
                 .client
-                .set(&key, &value[..], u32::MAX)
-                .map_err(|e| BackendError::MemCacheError(e)),
+                .set(key, value, u32::MAX)
+                .map_err(BackendError::MemCacheError),
         }
     }
 
     fn delete(&self, key: &str) -> Result<(), BackendError> {
-        match self.client.delete(&key) {
+        match self.client.delete(key) {
             Ok(_) => Ok(()),
             Err(e) => Err(BackendError::MemCacheError(e)),
         }

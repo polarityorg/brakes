@@ -13,7 +13,7 @@ fn retry_and_deny() {
         .build(client)
         .unwrap();
 
-    pool.get().unwrap().del::<&str, ()>(&key).unwrap();
+    pool.get().unwrap().del::<&str, ()>(key).unwrap();
 
     let limiter = RateLimiter::builder()
         .with_backend(RedisBackend::new(pool))
@@ -53,7 +53,7 @@ fn retry_and_allow() {
         .build(client)
         .unwrap();
 
-    pool.get().unwrap().del::<&str, ()>(&key).unwrap();
+    pool.get().unwrap().del::<&str, ()>(key).unwrap();
 
     let limiter = RateLimiter::builder()
         .with_backend(RedisBackend::new(pool))
@@ -86,7 +86,7 @@ fn deny() {
         .build(client)
         .unwrap();
 
-    pool.get().unwrap().del::<&str, ()>(&key).unwrap();
+    pool.get().unwrap().del::<&str, ()>(key).unwrap();
 
     let limiter = RateLimiter::builder()
         .with_backend(RedisBackend::new(pool))
@@ -126,7 +126,7 @@ fn allow() {
         .build(client)
         .unwrap();
 
-    pool.get().unwrap().del::<&str, ()>(&key).unwrap();
+    pool.get().unwrap().del::<&str, ()>(key).unwrap();
 
     let limiter = RateLimiter::builder()
         .with_backend(RedisBackend::new(pool))

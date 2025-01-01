@@ -36,7 +36,7 @@ fn redis() {
 fn test_backend(backend: impl Backend) {
     let key = "key";
 
-    backend.set(key, &vec![], None).unwrap();
+    backend.set(key, &[], None).unwrap();
 
     let value = backend.get(key);
     assert!(value.is_ok());

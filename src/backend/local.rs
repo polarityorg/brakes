@@ -22,14 +22,14 @@ impl Backend for Memory {
                 Some(v) => Ok((v.to_owned(), None)),
                 None => Err(BackendError::KeyMissing),
             },
-            Err(_) => return Err(BackendError::LocalMemLockError),
+            Err(_) => Err(BackendError::LocalMemLockError),
         }
     }
 
-    fn set(&self, key: &str, value: &Vec<u8>, _: Option<u64>) -> Result<(), BackendError> {
+    fn set(&self, key: &str, value: &[u8], _: Option<u64>) -> Result<(), BackendError> {
         match self.map.lock() {
             Ok(mut m) => {
-                m.insert(key.to_string(), value.clone());
+                m.insert(key.to_string(), value.to_vec());
                 Ok(())
             }
             Err(_) => Err(BackendError::LocalMemLockError),
@@ -44,5 +44,11 @@ impl Backend for Memory {
             }
             Err(_) => Err(BackendError::LocalMemLockError),
         }
+    }
+}
+
+impl Default for Memory {
+    fn default() -> Self {
+        Self::new()
     }
 }
