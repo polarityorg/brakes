@@ -50,7 +50,7 @@ pub struct FixedWindowInstance {
 }
 
 impl FixedWindowInstance {
-    pub fn new(window_start: u128, count: u32) -> Self {
+    pub(crate) fn new(window_start: u128, count: u32) -> Self {
         FixedWindowInstance {
             window_start,
             count,

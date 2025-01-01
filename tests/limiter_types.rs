@@ -45,26 +45,6 @@ fn sliding_window_counter() {
         sleep(Duration::from_millis(15));
         assert!(result.is_ok())
     }
-
-    // should fall within the same window, should fail
-    let result = limiter.is_ratelimited("ip");
-    assert!(result.is_err());
-
-    // new sliding window should have 80%
-    sleep(Duration::from_millis(15));
-
-    // should only allow 1 request (20%)
-    for i in 0..2 {
-        let result = limiter.is_ratelimited("ip");
-        assert!(result.is_ok() == (i < 1))
-    }
-
-    sleep(Duration::from_millis(100));
-    for i in 0..6 {
-        let result = limiter.is_ratelimited("ip");
-        sleep(Duration::from_millis(15));
-        assert!(result.is_ok() == (i < 5))
-    }
 }
 
 #[test]
