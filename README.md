@@ -2,6 +2,13 @@
 
 **brakes** is a distributed rate limiting library. It offers a number of rate limiting algorithms, supports multiple caching backends (local memory, Redis, Memcached), and includes a set of middlewares for popular Rust web frameworks like [Actix Web](https://actix.rs/) and [Axum](https://docs.rs/axum/latest/axum/).
 
+
+[![Build status](https://github.com/mohammadsamir/brakes/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mohammadsamir/brakes/actions/workflows/ci.yml)
+[![crates.io version](https://img.shields.io/crates/v/brakes)](https://crates.io/crates/brakes)
+[![docs.rs](https://img.shields.io/docsrs/brakes/latest)](https://docs.rs/brakes/latest/brakes/)
+
+More information can be found in the [crate documentation](https://docs.rs/brakes/latest/brakes/).
+
 ## Features
 - Support for multiple rate limiting algorithms:
   - Fixed window
