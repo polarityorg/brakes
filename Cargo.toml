@@ -17,15 +17,14 @@ futures-util = { version = "0.3.31", optional = true }
 tower = { version = "0.5.2", optional = true }
 http = { version = "1.2.0", optional = true }
 futures = { version = "0.3.31", optional = true }
-redis = { package = "redis", version = "0.27.6", optional = true, features = [
-    "r2d2",
-] }
+redis = { package = "redis", version = "0.27.6", optional = true }
 r2d2 = { version = "0.8.10", optional = true }
 log = "0.4.22"
 
 [features]
 memcache = ["dep:memcache"]
-redis = ["dep:redis", "dep:r2d2"]
+redis = ["dep:redis", "dep:r2d2", "redis/r2d2"]
+redis-cluster = ["dep:redis", "dep:r2d2", "redis/cluster", "redis/r2d2"]
 actixweb = ["dep:actix-web", "dep:futures-util"]
 tower = ["dep:tower", "dep:http", "dep:futures"]
 
