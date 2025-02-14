@@ -6,6 +6,9 @@ pub mod memcache;
 #[cfg(feature = "redis")]
 #[cfg_attr(docsrs, doc(cfg(feature = "redis")))]
 pub mod redis;
+#[cfg(feature = "redis-cluster")]
+#[cfg_attr(docsrs, doc(cfg(feature = "redis-cluster")))]
+pub mod redis_cluster;
 
 #[cfg(feature = "memcache")]
 use ::memcache::MemcacheError;
